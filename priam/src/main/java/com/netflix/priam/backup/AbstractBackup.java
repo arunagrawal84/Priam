@@ -16,16 +16,17 @@
 package com.netflix.priam.backup;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.io.FilenameFilter;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import com.netflix.priam.aws.auth.SSTableCompressor3;
 import com.netflix.priam.notification.BackupNotificationMgr;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,8 +93,28 @@ public abstract class AbstractBackup extends Task
      */
     protected List<AbstractBackupPath> upload(File parent, final BackupFileType type) throws Exception
     {
+        final FilenameFilter datadbFilter = new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith("Data.db");
+            }
+        };
+
+        final String[] dataDBFiles = parent.list(datadbFilter);
+        final File compressedDir = new File(parent, "compressed");
+        SSTableCompressor3 compressor3 = new SSTableCompressor3();
+        for (final String dataDBFile : dataDBFiles) {
+            compressor3.compress(dataDBFile, compressedDir.getAbsolutePath());
+        }
+
+        logger.info("Finished compressing all the files");
+        logger.info("Parent: " + parent.getAbsolutePath());
+        logger.info("compressed: " + compressedDir.getAbsolutePath());
+
+        Collection<File> compressedFiles = FileUtils.listFiles(compressedDir, null, true);
+
         final List<AbstractBackupPath> bps = Lists.newArrayList();
-        for (final File file : parent.listFiles())
+        for (final File file : compressedFiles)
         {
             //== decorate file with metadata
             final AbstractBackupPath bp = pathFactory.get();
@@ -108,7 +129,7 @@ public abstract class AbstractBackup extends Task
                 {
                     public AbstractBackupPath retriableCall() throws Exception
                     {
-                        upload(bp); 
+                        upload(bp);
                         file.delete();
                         return bp;
                     }

@@ -27,6 +27,7 @@ import com.google.inject.ImplementedBy;
 import com.netflix.priam.aws.S3BackupPath;
 import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.io.util.RandomAccessReader;
+import org.apache.cassandra.io.util.Rebufferer;
 import org.apache.commons.lang3.StringUtils;
 
 import com.netflix.priam.IConfiguration;
@@ -330,6 +331,7 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
         {
             return 0;
         }
+
     }
 
     @Override

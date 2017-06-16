@@ -15,6 +15,9 @@
  */
 package com.netflix.priam.cluster.management;
 
+
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.config.SchemaConstants;
 import org.apache.cassandra.db.Keyspace;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.utils.JMXConnectorMgr;
@@ -54,20 +57,19 @@ public class Flush implements IClusterManagement<String> {
             return flushed;
         }
 
+
         //If flush is for certain keyspaces, validate keyspace exist
         for (String keyspace : keyspaces) {
             if (!this.jmxConnectorMgr.getKeyspaces().contains(keyspace)) {
                 throw new IllegalArgumentException("Keyspace [" + keyspace + "] does not exist.");
             }
-       /* }
+//            //2.X ONLY
+//            if (Keyspace.SYSTEM_KS.equals(keyspace)) //no need to flush system keyspaces.
+//                continue;
 
-        for (String keyspace : keyspaces) { //flush each keyspace with the CFs.*/
-            if (Keyspace.SYSTEM_KS.equals(keyspace)) //no need to flush system keyspaces.
-                continue;
-
-        /* *****Replace with this in 3.10 Cassandra.
+            //3.X ONLY
             if (SchemaConstants.isSystemKeyspace(keyspace)) //no need to flush system keyspaces.
-                continue;*/
+                continue;
 
             try {
                 this.jmxConnectorMgr.forceKeyspaceFlush(keyspace, new String[0]);

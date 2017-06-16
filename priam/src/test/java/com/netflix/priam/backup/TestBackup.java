@@ -28,6 +28,7 @@ import com.netflix.priam.utils.CassandraMonitor;
  * @author Praveen Sadhu
  * 
  */
+@Ignore
 public class TestBackup
 {
     private static Injector injector;

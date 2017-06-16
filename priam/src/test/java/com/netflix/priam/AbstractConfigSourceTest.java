@@ -10,7 +10,7 @@ import java.util.List;
 
 public final class AbstractConfigSourceTest 
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConfigSourceTest.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(AbstractConfigSourceTest.class);
 
     @Test
     public void lists() 
@@ -18,7 +18,7 @@ public final class AbstractConfigSourceTest
         AbstractConfigSource source = new MemoryConfigSource();
         source.set("foo", "bar,baz, qux ");
         final List<String> values = source.getList("foo");
-        LOGGER.info("Values {}", values);
+        logger.info("Values {}", values);
         Assert.assertEquals(ImmutableList.of("bar", "baz", "qux"), values);
     }
 
@@ -28,7 +28,7 @@ public final class AbstractConfigSourceTest
         AbstractConfigSource source = new MemoryConfigSource();
         source.set("foo", "bar");
         final List<String> values = source.getList("foo");
-        LOGGER.info("Values {}", values);
+        logger.info("Values {}", values);
         Assert.assertEquals(ImmutableList.of("bar"), values);
     }
 
@@ -38,7 +38,7 @@ public final class AbstractConfigSourceTest
         AbstractConfigSource source = new MemoryConfigSource();
         source.set("foo", "\tbar ");
         final List<String> values = source.getList("foo");
-        LOGGER.info("Values {}", values);
+        logger.info("Values {}", values);
         Assert.assertEquals(ImmutableList.of("bar"), values);
     }
 }

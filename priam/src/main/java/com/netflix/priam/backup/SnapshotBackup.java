@@ -204,7 +204,7 @@ public class SnapshotBackup extends AbstractBackup {
 
         } finally {
             try {
-                clearSnapshot(snapshotName);
+                //clearSnapshot(snapshotName);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
@@ -279,8 +279,10 @@ public class SnapshotBackup extends AbstractBackup {
         new RetryableCallable<Void>() {
             public Void retriableCall() throws Exception {
                 JMXNodeTool nodetool = JMXNodeTool.instance(config);
-                nodetool.takeSnapshot(snapshotName, null);
-                //nodetool.takeSnapshot(snapshotName, null, new String[0]);
+                //2.x only
+                //nodetool.takeSnapshot(snapshotName, null);
+                //3.x only
+                nodetool.takeSnapshot(snapshotName, null, Collections.EMPTY_MAP);
                 return null;
             }
         }.call();

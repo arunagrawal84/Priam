@@ -278,30 +278,32 @@ public class CassandraAdmin
 			return Response.status(503).entity("JMXConnectionException")
 					.build();
 		}
-        Iterator<Map.Entry<String, JMXEnabledThreadPoolExecutorMBean>> threads = nodetool.getThreadPoolMBeanProxies();
-        JSONArray threadPoolArray = new JSONArray();
-        while (threads.hasNext())
-        {
-            Entry<String, JMXEnabledThreadPoolExecutorMBean> thread = threads.next();
-            JMXEnabledThreadPoolExecutorMBean threadPoolProxy = thread.getValue();
-            JSONObject tpObj = new JSONObject();// "Pool Name", "Active",
-                                                // "Pending", "Completed",
-                                                // "Blocked", "All time blocked"
-            tpObj.put("pool name", thread.getKey());
-            tpObj.put("active", threadPoolProxy.getActiveCount());
-            tpObj.put("pending", threadPoolProxy.getPendingTasks());
-            tpObj.put("completed", threadPoolProxy.getCompletedTasks());
-            tpObj.put("blocked", threadPoolProxy.getCurrentlyBlockedTasks());
-            tpObj.put("total blocked", threadPoolProxy.getTotalBlockedTasks());
-            threadPoolArray.put(tpObj);
-        }
-        JSONObject droppedMsgs = new JSONObject();
-        for (Entry<String, Integer> entry : nodetool.getDroppedMessages().entrySet())
-            droppedMsgs.put(entry.getKey(), entry.getValue());
-
         JSONObject rootObj = new JSONObject();
-        rootObj.put("thread pool", threadPoolArray);
-        rootObj.put("dropped messages", droppedMsgs);
+
+//
+//        Iterator<Map.Entry<String, JMXEnabledThreadPoolExecutorMBean>> threads = nodetool.getThreadPoolMBeanProxies();
+//        JSONArray threadPoolArray = new JSONArray();
+//        while (threads.hasNext())
+//        {
+//            Entry<String, JMXEnabledThreadPoolExecutorMBean> thread = threads.next();
+//            JMXEnabledThreadPoolExecutorMBean threadPoolProxy = thread.getValue();
+//            JSONObject tpObj = new JSONObject();// "Pool Name", "Active",
+//                                                // "Pending", "Completed",
+//                                                // "Blocked", "All time blocked"
+//            tpObj.put("pool name", thread.getKey());
+//            tpObj.put("active", threadPoolProxy.getActiveCount());
+//            tpObj.put("pending", threadPoolProxy.getPendingTasks());
+//            tpObj.put("completed", threadPoolProxy.getCompletedTasks());
+//            tpObj.put("blocked", threadPoolProxy.getCurrentlyBlockedTasks());
+//            tpObj.put("total blocked", threadPoolProxy.getTotalBlockedTasks());
+//            threadPoolArray.put(tpObj);
+//        }
+//        JSONObject droppedMsgs = new JSONObject();
+//        for (Entry<String, Integer> entry : nodetool.getDroppedMessages().entrySet())
+//            droppedMsgs.put(entry.getKey(), entry.getValue());
+//
+//        rootObj.put("thread pool", threadPoolArray);
+//        rootObj.put("dropped messages", droppedMsgs);
 
         return Response.ok(rootObj, MediaType.APPLICATION_JSON).build();
     }
@@ -320,7 +322,10 @@ public class CassandraAdmin
 		}
         JSONObject rootObj = new JSONObject();
         CompactionManagerMBean cm = nodetool.getCompactionManagerProxy();
-        rootObj.put("pending tasks", cm.getPendingTasks());
+        //2.x only
+        // rootObj.put("pending tasks", cm.getPendingTasks());
+        //3.x only
+        rootObj.put("pending tasks", nodetool.getCompactionMetric("PendingTasks"));
         JSONArray compStats = new JSONArray();
         for (Map<String, String> c : cm.getCompactions())
         {
@@ -638,38 +643,38 @@ public class CassandraAdmin
             return Response.status(400).entity("Missing keyspace/cfname in request").build();
 
         ColumnFamilyStoreMBean store = nodetool.getCfsProxy(keyspace, cfname);
-
-        // default is 90 offsets
-        long[] offsets = new EstimatedHistogram().getBucketOffsets();
-
-        long[] rrlh = store.getRecentReadLatencyHistogramMicros();
-        long[] rwlh = store.getRecentWriteLatencyHistogramMicros();
-        long[] sprh = store.getRecentSSTablesPerReadHistogram();
-        long[] ersh = store.getEstimatedRowSizeHistogram();
-        long[] ecch = store.getEstimatedColumnCountHistogram();
-
         JSONObject rootObj = new JSONObject();
-        JSONArray columns = new JSONArray();
-        columns.put("offset");
-        columns.put("sstables");
-        columns.put("write latency");
-        columns.put("read latency");
-        columns.put("row size");
-        columns.put("column count");
-        rootObj.put("columns", columns);
-        JSONArray values = new JSONArray();
-        for (int i = 0; i < offsets.length; i++)
-        {
-            JSONArray row = new JSONArray();
-            row.put(offsets[i]);
-            row.put(i < sprh.length ? sprh[i] : "");
-            row.put(i < rwlh.length ? rwlh[i] : "");
-            row.put(i < rrlh.length ? rrlh[i] : "");
-            row.put(i < ersh.length ? ersh[i] : "");
-            row.put(i < ecch.length ? ecch[i] : "");
-            values.put(row);
-        }
-        rootObj.put("values", values);
+//
+//        // default is 90 offsets
+//        long[] offsets = new EstimatedHistogram().getBucketOffsets();
+//
+//        long[] rrlh = store.getRecentReadLatencyHistogramMicros();
+//        long[] rwlh = store.getRecentWriteLatencyHistogramMicros();
+//        long[] sprh = store.getRecentSSTablesPerReadHistogram();
+//        long[] ersh = store.getEstimatedRowSizeHistogram();
+//        long[] ecch = store.getEstimatedColumnCountHistogram();
+//
+//        JSONArray columns = new JSONArray();
+//        columns.put("offset");
+//        columns.put("sstables");
+//        columns.put("write latency");
+//        columns.put("read latency");
+//        columns.put("row size");
+//        columns.put("column count");
+//        rootObj.put("columns", columns);
+//        JSONArray values = new JSONArray();
+//        for (int i = 0; i < offsets.length; i++)
+//        {
+//            JSONArray row = new JSONArray();
+//            row.put(offsets[i]);
+//            row.put(i < sprh.length ? sprh[i] : "");
+//            row.put(i < rwlh.length ? rwlh[i] : "");
+//            row.put(i < rrlh.length ? rrlh[i] : "");
+//            row.put(i < ersh.length ? ersh[i] : "");
+//            row.put(i < ecch.length ? ecch[i] : "");
+//            values.put(row);
+//        }
+//        rootObj.put("values", values);
         return Response.ok(rootObj, MediaType.APPLICATION_JSON).build();
     }
 
