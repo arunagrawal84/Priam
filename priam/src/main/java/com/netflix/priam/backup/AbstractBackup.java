@@ -100,20 +100,31 @@ public abstract class AbstractBackup extends Task
             }
         };
 
-        final String[] dataDBFiles = parent.list(datadbFilter);
+        final File[] dataDBFiles = parent.listFiles(datadbFilter);
+        List<AbstractBackupPath> bps = Lists.newArrayList();
         final File compressedDir = new File(parent, "compressed");
-        SSTableCompressor3 compressor3 = new SSTableCompressor3();
-        for (final String dataDBFile : dataDBFiles) {
-            compressor3.compress(dataDBFile, compressedDir.getAbsolutePath());
+        Collection<File> compressedFiles;
+
+        if (parent.getAbsolutePath().contains("system") || parent.getAbsolutePath().contains("dse"))
+        {
+            compressedFiles = FileUtils.listFiles(parent, null, true);
+        }else {
+            SSTableCompressor3 compressor3 = new SSTableCompressor3();
+            for (final File dataDBFile : dataDBFiles) {
+                compressor3.compress(dataDBFile.getAbsolutePath(), compressedDir.getAbsolutePath());
+            }
+            logger.info("Finished compressing all the files");
+            logger.info("Parent: " + parent.getAbsolutePath());
+            logger.info("compressed: " + compressedDir.getAbsolutePath());
+            if (!compressedDir.exists()) {
+                logger.info("No compressed data.db file exists for columnfamily: " + parent.getName());
+                return bps;
+            }
+            compressedFiles = FileUtils.listFiles(compressedDir, null, true);
+
         }
 
-        logger.info("Finished compressing all the files");
-        logger.info("Parent: " + parent.getAbsolutePath());
-        logger.info("compressed: " + compressedDir.getAbsolutePath());
 
-        Collection<File> compressedFiles = FileUtils.listFiles(compressedDir, null, true);
-
-        final List<AbstractBackupPath> bps = Lists.newArrayList();
         for (final File file : compressedFiles)
         {
             //== decorate file with metadata
@@ -130,7 +141,7 @@ public abstract class AbstractBackup extends Task
                     public AbstractBackupPath retriableCall() throws Exception
                     {
                         upload(bp);
-                        file.delete();
+                        //file.delete();
                         return bp;
                     }
                 }.call();

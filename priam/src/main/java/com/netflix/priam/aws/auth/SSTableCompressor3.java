@@ -120,7 +120,7 @@ public class SSTableCompressor3 {
         @Override
         public void startPartition(DecoratedKey key, long indexPosition) {
             currentKey = Pair.create(key.getKey(), indexPosition);
-            logger.info("Current key: " + new String(key.getKey().array()));
+            //logger.info("Current key: " + new String(key.getKey().array()));
         }
 
         @Override

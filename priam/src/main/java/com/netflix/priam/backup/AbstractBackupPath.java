@@ -15,10 +15,7 @@
  */
 package com.netflix.priam.backup;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.regex.Pattern;
@@ -90,7 +87,8 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
     public InputStream localReader() throws IOException
     {
         assert backupFile != null;
-        return new RafInputStream(RandomAccessReader.open(backupFile));
+        return new FileInputStream(backupFile);
+                //new RafInputStream(RandomAccessReader.open(backupFile));
     }
 
     public void parseLocal(File file, BackupFileType type) throws ParseException

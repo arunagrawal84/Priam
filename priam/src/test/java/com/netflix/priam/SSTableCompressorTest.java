@@ -47,7 +47,7 @@ public class SSTableCompressorTest {
     @BeforeClass
     public static void setup() throws InterruptedException, IOException
     {
-        //injector = Guice.createInjector(new BRTestModule());
+        injector = Guice.createInjector(new BRTestModule());
     }
 
     @Test
@@ -56,10 +56,13 @@ public class SSTableCompressorTest {
 //        String inputDir = "src/test/resources/pappyperftest/test1-6924dae01bd011e7a6fa2d550a288353";
 //        String filename = "/mc-69-big-Data.db";
         String inputDir = "src/test/resources/data";
-        String filename = "/tb2/mc-1-big-Data.db";
+        String filename = "/mc-1-big-Data.db";
         File outputLocation = new File(inputDir, "compressed");
         ssTableCompressor = new SSTableCompressor3();
+        long startTime = System.currentTimeMillis();
         ssTableCompressor.compress(inputDir + filename, outputLocation.getAbsolutePath());
+        long endTime = System.currentTimeMillis() - startTime;
+        logger.info("Finished in ; " + endTime);
         Collection<File> compressedFiles = FileUtils.listFiles(outputLocation, null, true);
         for(File file:compressedFiles)
         {

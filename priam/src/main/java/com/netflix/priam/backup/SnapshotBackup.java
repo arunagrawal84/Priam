@@ -204,7 +204,7 @@ public class SnapshotBackup extends AbstractBackup {
 
         } finally {
             try {
-                //clearSnapshot(snapshotName);
+                clearSnapshot(snapshotName);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
