@@ -15,32 +15,60 @@
  */
 package com.netflix.priam.compress;
 
+import com.netflix.priam.aws.S3FileSystem;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.xxhash.XXHashFactory;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 /**
  * Byte iterator representing compressed data.
- * Uses snappy compression
+ * Uses snappy compression by default
  */
 public class ChunkedStream implements Iterator<byte[]>
 {
+    private static final Logger logger = LoggerFactory.getLogger(ChunkedStream.class);
     private boolean hasnext = true;
     private ByteArrayOutputStream bos;
-    private SnappyOutputStream compress;
+    private ByteBuffer byteBuffer;
+    private OutputStream compress;
     private InputStream origin;
     private long chunkSize;
     private static int BYTES_TO_READ = 2048;
+    static final int DEFAULT_SEED = 0x9747b28c;
 
     public ChunkedStream(InputStream is, long chunkSize) throws IOException
     {
+        this(is, chunkSize, CompressionType.FILE_LEVEL_SNAPPY);
+    }
+
+    public ChunkedStream(InputStream is, long chunkSize, CompressionType compressionType) throws IOException
+    {
         this.origin = is;
-        this.bos = new ByteArrayOutputStream();
-        this.compress = new SnappyOutputStream(bos);
         this.chunkSize = chunkSize;
+        this.bos = new ByteArrayOutputStream();
+        switch (compressionType)
+        {
+            case FILE_LEVEL_SNAPPY:
+                this.compress = new SnappyOutputStream(bos);
+                logger.info("Compressing InputStream with compression: {}", compressionType);
+                break;
+            case FILE_LEVEL_LZ4:
+                this.compress = new LZ4BlockOutputStream(bos, 1 << 16, LZ4Factory.fastestInstance().fastCompressor(), XXHashFactory.fastestInstance().newStreamingHash32(DEFAULT_SEED).asChecksum(), true);
+                logger.info("Compressing InputStream with compression: {}", compressionType);
+                break;
+            default:
+                throw new IOException("Compression Type: " + compressionType + " is not supported");
+        }
     }
 
     @Override
@@ -74,6 +102,7 @@ public class ChunkedStream implements Iterator<byte[]>
     private byte[] done() throws IOException
     {
         compress.flush();
+        bos.flush();
         byte[] return_ = bos.toByteArray();
         hasnext = false;
         IOUtils.closeQuietly(compress);

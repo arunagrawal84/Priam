@@ -40,6 +40,11 @@ public class SnappyCompression implements ICompression
     }
 
     @Override
+    public CompressionType getCompressionType() {
+        return CompressionType.FILE_LEVEL_SNAPPY;
+    }
+
+    @Override
     public void decompressAndClose(InputStream input, OutputStream output) throws IOException
     {
         try

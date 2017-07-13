@@ -19,6 +19,8 @@ import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -34,7 +36,11 @@ import javax.management.ObjectName;
 
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.netflix.priam.aws.auth.IS3Credential;
+import com.netflix.priam.aws.auth.RateLimitedStream;
 import com.netflix.priam.backup.*;
 import com.netflix.priam.merics.IMetricPublisher;
 import org.apache.commons.io.IOUtils;
@@ -76,6 +82,8 @@ public class S3FileSystem extends S3FileSystemBase implements IBackupFileSystem,
     private BlockingSubmitThreadPoolExecutor executor;
     private RateLimiter rateLimiter;
     private IBackupMetrics backupMetricsMgr;
+    private TransferManager transferManager;
+
 
     @Inject
     public S3FileSystem(Provider<AbstractBackupPath> pathProvider, ICompression compress, final IConfiguration config
@@ -104,10 +112,10 @@ public class S3FileSystem extends S3FileSystemBase implements IBackupFileSystem,
         catch (Exception e)
         {
             throw new RuntimeException(e);
-        }        
-        
-        super.s3Client = AmazonS3Client.builder().withCredentials(cred.getAwsCredentialProvider()).withRegion(config.getDC()).build();
-        //super.s3Client.setEndpoint(super.getS3Endpoint(this.config));
+        }
+
+        super.s3Client = AmazonS3ClientBuilder.standard().withCredentials(cred.getAwsCredentialProvider()).withRegion(config.getDC()).build();
+        this.transferManager = TransferManagerBuilder.standard().withS3Client(super.s3Client).build();
     }
 
     @Override
@@ -133,9 +141,35 @@ public class S3FileSystem extends S3FileSystemBase implements IBackupFileSystem,
             throw new BackupRestoreException(e.getMessage(), e);
         }
     }
-    
-    @Override
-    public void upload(AbstractBackupPath path, InputStream in) throws BackupRestoreException
+
+    public void uploadNoCompression(AbstractBackupPath path, InputStream in) throws BackupRestoreException {
+        reinitialize();  //perform before file upload
+        super.uploadCount.incrementAndGet();
+        String bucketName = config.getBackupPrefix();
+        String objectName = path.getRemotePath();
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentLength(path.getSize());
+        logger.info("No Compression: Uploading to {}/{}".format(config.getBackupPrefix(), path.getRemotePath()));
+        try {
+            long startTime = System.nanoTime();
+            //final InputStream seekableByteChannelInputStream = new SeekableByteChannelInputStream(FileChannel.open(Paths.get(path.getBackupFile().getAbsolutePath())));
+            //final InputStream rateLimitedInputStream = new RateLimitedInputStream(seekableByteChannelInputStream, rateLimiter);
+            final InputStream rateLimitedStream = new RateLimitedStream(FileChannel.open(Paths.get(path.getBackupFile().getAbsolutePath())), rateLimiter);
+            final Upload upload = this.transferManager.upload(bucketName, objectName, rateLimitedStream, objectMetadata);
+            upload.waitForCompletion();
+            bytesUploaded.addAndGet(path.getSize());
+            long completedTime = System.nanoTime();
+            postProcessingPerFile(path, TimeUnit.NANOSECONDS.toMillis(startTime), TimeUnit.NANOSECONDS.toMillis(completedTime));
+        } catch (Exception e) {
+            this.backupMetricsMgr.incrementInvalidUploads();
+            logger.error("Error uploading file " + path.getFileName() + " using AWSTransferManager", e);
+            throw new BackupRestoreException("Error uploading file " + path.getFileName(), e);
+        } finally {
+            IOUtils.closeQuietly(in);
+        }
+    }
+
+    private void uploadCompression(AbstractBackupPath path, InputStream in) throws BackupRestoreException
     {
         reinitialize();  //perform before file upload
         super.uploadCount.incrementAndGet();
@@ -156,7 +190,7 @@ public class S3FileSystem extends S3FileSystemBase implements IBackupFileSystem,
             int partNum = 0;
             AtomicInteger partsUploaded = new AtomicInteger(0);
 
-            long startTime = System.nanoTime();; //initialize for each file upload
+            long startTime = System.nanoTime(); //initialize for each file upload
             while (chunks.hasNext())
             {
                 byte[] chunk = chunks.next();
@@ -210,6 +244,14 @@ public class S3FileSystem extends S3FileSystemBase implements IBackupFileSystem,
         } finally {
             IOUtils.closeQuietly(in);
         }
+    }
+
+    public void upload(AbstractBackupPath path, InputStream in) throws BackupRestoreException
+    {
+        if (config.isBackupCompressionEnabled())
+            uploadCompression(path, in);
+        else
+            uploadNoCompression(path, in);
     }
 
     @Override

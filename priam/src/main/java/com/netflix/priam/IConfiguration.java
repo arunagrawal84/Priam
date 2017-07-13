@@ -630,4 +630,9 @@ public interface IConfiguration {
     @return the absolute path to store the backup status on disk
      */
     public String getBackupStatusFileLoc();
+
+    /*
+    @return true if backups/restores are compression enabled.
+     */
+    public boolean isBackupCompressionEnabled();
 }

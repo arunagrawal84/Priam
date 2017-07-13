@@ -25,6 +25,7 @@ import java.util.Iterator;
 @ImplementedBy(SnappyCompression.class)
 public interface ICompression
 {
+     public CompressionType getCompressionType();
     /**
      * Uncompress the input stream and write to the output stream.
      * Closes both input and output streams

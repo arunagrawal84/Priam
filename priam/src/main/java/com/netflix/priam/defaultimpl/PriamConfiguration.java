@@ -1224,4 +1224,6 @@ public class PriamConfiguration implements IConfiguration
         return "backup.status";
     }
 
+    public boolean isBackupCompressionEnabled() {return config.get(PRIAM_PRE + ".backup.compression", true); }
+
 }
