@@ -33,11 +33,6 @@ public class SnappyCompression implements ICompression
 {
     private static final int BUFFER = 2 * 1024;
 
-    @Override
-    public Iterator<byte[]> compress(InputStream is, long chunkSize) throws IOException
-    {
-        return new ChunkedStream(is, chunkSize);
-    }
 
     @Override
     public CompressionType getCompressionType() {

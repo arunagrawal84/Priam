@@ -38,7 +38,9 @@ import javax.management.ObjectName;
 
 import com.amazonaws.services.s3.model.*;
 import com.netflix.priam.backup.*;
+import com.netflix.priam.compress.ChunkedStream;
 import com.netflix.priam.merics.IMetricPublisher;
+import com.netflix.priam.scheduler.UnsupportedTypeException;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -238,13 +240,18 @@ public class S3EncryptedFileSystem extends S3FileSystemBase implements IBackupFi
 		
 		try {
 	        
-			Iterator<byte[]> compressedChunks = this.compress.compress(in, chunkSize);
+			Iterator<byte[]> compressedChunks = new ChunkedStream(in, chunkSize, config.getCompressionType());
 			while (compressedChunks.hasNext()) {
 				byte[] compressedChunk = compressedChunks.next();
 				compressedBos.write(compressedChunk);
 			}						
 			
-		} catch (IOException e) {
+		} catch (IOException e){
+			System.out.println("Exception in compressing the input data.  Msg: " + e.getMessage());
+			e.printStackTrace();
+			System.exit(1);
+		}
+		catch(UnsupportedTypeException e) {
 			System.out.println("Exception in compressing the input data.  Msg: " + e.getMessage());
 			e.printStackTrace();
 			System.exit(1);

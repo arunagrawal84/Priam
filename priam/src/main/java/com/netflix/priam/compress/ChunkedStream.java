@@ -66,6 +66,10 @@ public class ChunkedStream implements Iterator<byte[]>
                 this.compress = new LZ4BlockOutputStream(bos, 1 << 16, LZ4Factory.fastestInstance().fastCompressor(), XXHashFactory.fastestInstance().newStreamingHash32(DEFAULT_SEED).asChecksum(), true);
                 logger.info("Compressing InputStream with compression: {}", compressionType);
                 break;
+            case NO_COMPRESSION:
+                this.compress = bos;
+                logger.info("Not compressing InputStream.");
+                break;
             default:
                 throw new IOException("Compression Type: " + compressionType + " is not supported");
         }

@@ -31,9 +31,4 @@ public interface ICompression
      * Closes both input and output streams
      */
     public void decompressAndClose(InputStream input, OutputStream output) throws IOException;
-
-    /**
-     * Produces chunks of compressed data.
-     */
-    public Iterator<byte[]> compress(InputStream is, long chunkSize) throws IOException;
 }

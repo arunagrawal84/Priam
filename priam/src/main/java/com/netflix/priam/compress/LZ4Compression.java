@@ -51,9 +51,4 @@ public class LZ4Compression implements ICompression {
             IOUtils.closeQuietly(input);
         }
     }
-
-    @Override
-    public Iterator<byte[]> compress(InputStream is, long chunkSize) throws IOException {
-        return new ChunkedStream(is, chunkSize, CompressionType.FILE_LEVEL_LZ4);
-    }
 }

@@ -6,8 +6,10 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Singleton;
+import com.netflix.priam.compress.CompressionType;
 import com.netflix.priam.defaultimpl.PriamConfiguration;
 import com.netflix.priam.scheduler.SchedulerType;
+import com.netflix.priam.scheduler.UnsupportedTypeException;
 
 @Singleton
 public class FakeConfiguration implements IConfiguration
@@ -788,7 +790,16 @@ public class FakeConfiguration implements IConfiguration
     }
 
     @Override
-    public boolean isBackupCompressionEnabled() {
-        return true;
+    public SchedulerType getFlushSchedulerType() throws UnsupportedTypeException {
+        return SchedulerType.HOUR;
+    }
+
+    @Override
+    public String getFlushCronExpression() {
+        return null;
+    }
+    @Override
+    public CompressionType getCompressionType() throws UnsupportedTypeException {
+        return CompressionType.FILE_LEVEL_SNAPPY;
     }
 }

@@ -17,10 +17,7 @@
 
 package com.netflix.priam;
 
-import com.netflix.priam.compress.CompressionType;
-import com.netflix.priam.compress.ICompression;
-import com.netflix.priam.compress.LZ4Compression;
-import com.netflix.priam.compress.SnappyCompression;
+import com.netflix.priam.compress.*;
 import net.jpountz.lz4.LZ4BlockOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +45,7 @@ public class TestSnappy {
         {
             startTime = System.currentTimeMillis();
             for (File file : inputDir.listFiles()) {
-                compress(file, getCompressionOutputDir(compressionType), getCompressionAlgorithm(compressionType));
+                compress(file, getCompressionOutputDir(compressionType), compressionType);
             }
             endTime = System.currentTimeMillis();
             LOGGER.info("Total time taken to compress file in {}: {}", compressionType.toString(), (endTime - startTime));
@@ -61,27 +58,14 @@ public class TestSnappy {
         return new File(DATA_DIR+ File.separator + compressionType.toString() + File.separator);
     }
 
-    public static ICompression getCompressionAlgorithm(CompressionType compressionType)
-    {
-        switch (compressionType)
-        {
-            case FILE_LEVEL_SNAPPY:
-                return snappyCompression;
 
-            case FILE_LEVEL_LZ4:
-                return lz4Compression;
-        }
-
-        return null;
-    }
-
-    public static void compress(File inputFileName, File outputDir, ICompression compression)
+    public static void compress(File inputFileName, File outputDir, CompressionType compressionType)
     {
         outputDir.mkdirs();
         //LOGGER.info("{}: Input file name: {}", compression.getCompressionType(), inputFileName);
         File outputFile = new File(outputDir, inputFileName.getName());
         try (OutputStream outputStream = new FileOutputStream(outputFile)) {
-                    Iterator<byte[]> iterator = compression.compress(new FileInputStream(inputFileName), 2 * 1024 * 1024);
+                    Iterator<byte[]> iterator = new ChunkedStream(new FileInputStream(inputFileName), 2 * 1024 * 1024, compressionType);
                     while (iterator.hasNext()) {
                         byte[] chunk = iterator.next();
                         LOGGER.info("Chunk size: {}", chunk.length);

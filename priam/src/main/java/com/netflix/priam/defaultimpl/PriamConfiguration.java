@@ -25,6 +25,7 @@ import com.google.inject.Singleton;
 import com.netflix.priam.IConfigSource;
 import com.netflix.priam.IConfiguration;
 import com.netflix.priam.ICredential;
+import com.netflix.priam.compress.CompressionType;
 import com.netflix.priam.identity.InstanceEnvIdentity;
 import com.netflix.priam.identity.config.InstanceDataRetriever;
 import com.netflix.priam.scheduler.SchedulerType;
@@ -631,6 +632,23 @@ public class PriamConfiguration implements IConfiguration
     }
 
     @Override
+    public CompressionType getCompressionType() throws UnsupportedTypeException{
+        String compressionType = config.get(PRIAM_PRE + ".compression.type", CompressionType.FILE_LEVEL_SNAPPY.getCompressionType());
+        return CompressionType.lookup(compressionType);
+    }
+
+    @Override
+    public SchedulerType getFlushSchedulerType() throws UnsupportedTypeException{
+        String schedulerType = config.get(PRIAM_PRE + ".flush.schedule.type", SchedulerType.HOUR.getSchedulerType());
+        return SchedulerType.lookup(schedulerType);
+    }
+
+    @Override
+    public String getFlushCronExpression() {
+        return config.get(PRIAM_PRE + ".flush.cron");
+    }
+
+    @Override
     public String getSnapshotKeyspaceFilters() {
     	return config.get(CONFIG_SNAPSHOT_KEYSPACE_FILTER);
     }
@@ -1223,7 +1241,4 @@ public class PriamConfiguration implements IConfiguration
     public String getBackupStatusFileLoc() {
         return "backup.status";
     }
-
-    public boolean isBackupCompressionEnabled() {return config.get(PRIAM_PRE + ".backup.compression", true); }
-
 }
