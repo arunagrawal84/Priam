@@ -13,9 +13,10 @@
  */
 package com.netflix.priam.cluster.management;
 
+import com.google.inject.Provider;
 import com.netflix.priam.backup.BackupRestoreUtil;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.CassandraOperations;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.merics.CompactionMeasurement;
 import com.netflix.priam.scheduler.CronTimer;
 import com.netflix.priam.scheduler.TaskTimer;
@@ -33,16 +34,16 @@ import org.slf4j.LoggerFactory;
 public class Compaction extends IClusterManagement<String> {
     private static final Logger logger = LoggerFactory.getLogger(Compaction.class);
     private final IConfiguration config;
-    private final CassandraOperations cassandraOperations;
+    private final Provider<JmxManager> jmxProxy;
 
     @Inject
     public Compaction(
             IConfiguration config,
-            CassandraOperations cassandraOperations,
+            Provider<JmxManager> jmxProxy,
             CompactionMeasurement compactionMeasurement) {
         super(config, Task.COMPACTION, compactionMeasurement);
         this.config = config;
-        this.cassandraOperations = cassandraOperations;
+        this.jmxProxy = jmxProxy;
     }
 
     final Map<String, List<String>> getCompactionIncludeFilter(IConfiguration config)
@@ -64,7 +65,7 @@ public class Compaction extends IClusterManagement<String> {
     final Map<String, List<String>> getCompactionFilterCfs(IConfiguration config) throws Exception {
         final Map<String, List<String>> includeFilter = getCompactionIncludeFilter(config);
         final Map<String, List<String>> excludeFilter = getCompactionExcludeFilter(config);
-        final Map<String, List<String>> allColumnfamilies = cassandraOperations.getColumnfamilies();
+        final Map<String, List<String>> allColumnfamilies = jmxProxy.get().getColumnfamilies();
         Map<String, List<String>> result = new HashMap<>();
 
         allColumnfamilies.forEach(
@@ -117,8 +118,9 @@ public class Compaction extends IClusterManagement<String> {
 
         if (!columnfamilies.isEmpty())
             for (Map.Entry<String, List<String>> entry : columnfamilies.entrySet()) {
-                cassandraOperations.forceKeyspaceCompaction(
-                        entry.getKey(), entry.getValue().toArray(new String[0]));
+                jmxProxy.get()
+                        .forceKeyspaceCompaction(
+                                entry.getKey(), entry.getValue().toArray(new String[0]));
             }
 
         return columnfamilies.toString();

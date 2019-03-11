@@ -20,7 +20,7 @@ import com.google.inject.Guice
 import com.netflix.priam.backup.BRTestModule
 import com.netflix.priam.cluster.management.Compaction
 import com.netflix.priam.config.FakeConfiguration
-import com.netflix.priam.connection.CassandraOperations
+import com.netflix.priam.connection.JmxManagerImpl
 import com.netflix.priam.health.CassandraMonitor
 import mockit.Mock
 import mockit.MockUp
@@ -204,7 +204,7 @@ class TestCompaction extends Specification {
     }
 
 
-    private static class MockCassandraOperations extends MockUp<CassandraOperations> {
+    private static class MockCassandraOperations extends MockUp<JmxManagerImpl> {
         @Mock
         static void forceKeyspaceCompaction(String keyspaceName, String... columnfamily) throws Exception{
             Thread.sleep(2000)

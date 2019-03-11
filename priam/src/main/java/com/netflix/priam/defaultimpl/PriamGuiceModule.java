@@ -17,6 +17,8 @@
 package com.netflix.priam.defaultimpl;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.netflix.priam.aws.S3CrossAccountFileSystem;
 import com.netflix.priam.aws.S3EncryptedFileSystem;
@@ -28,6 +30,9 @@ import com.netflix.priam.backup.IBackupFileSystem;
 import com.netflix.priam.backupv2.IMetaProxy;
 import com.netflix.priam.backupv2.MetaV1Proxy;
 import com.netflix.priam.backupv2.MetaV2Proxy;
+import com.netflix.priam.config.IConfiguration;
+import com.netflix.priam.connection.JmxManager;
+import com.netflix.priam.connection.JmxManagerImpl;
 import com.netflix.priam.cred.ICredential;
 import com.netflix.priam.cred.ICredentialGeneric;
 import com.netflix.priam.cryptography.IFileCryptography;
@@ -73,5 +78,13 @@ public class PriamGuiceModule extends AbstractModule {
         bind(IMetaProxy.class).annotatedWith(Names.named("v1")).to(MetaV1Proxy.class);
         bind(IMetaProxy.class).annotatedWith(Names.named("v2")).to(MetaV2Proxy.class);
         bind(Registry.class).toInstance(new NoopRegistry());
+    }
+
+    @Provides
+    @Singleton
+    public JmxManager getJmxManager(IConfiguration configuration) throws Exception {
+        JmxManager jmxManager = new JmxManagerImpl(configuration);
+        jmxManager.connect();
+        return jmxManager;
     }
 }

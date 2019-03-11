@@ -21,7 +21,7 @@ import com.netflix.priam.backup.*;
 import com.netflix.priam.backup.BackupVersion;
 import com.netflix.priam.config.IBackupRestoreConfig;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.CassandraOperations;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.health.CassandraMonitor;
 import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.scheduler.CronTimer;
@@ -66,7 +66,7 @@ public class SnapshotMetaTask extends AbstractBackup {
     private final MetaFileWriterBuilder metaFileWriter;
     private MetaFileWriterBuilder.DataStep dataStep;
     private final IMetaProxy metaProxy;
-    private final CassandraOperations cassandraOperations;
+    private final Provider<JmxManager> jmxProxy;
     private String snapshotName = null;
     private static final Lock lock = new ReentrantLock();
     private final IBackupStatusMgr snapshotStatusMgr;
@@ -88,11 +88,11 @@ public class SnapshotMetaTask extends AbstractBackup {
             @Named("v2") IMetaProxy metaProxy,
             InstanceIdentity instanceIdentity,
             IBackupStatusMgr snapshotStatusMgr,
-            CassandraOperations cassandraOperations) {
+            Provider<JmxManager> jmxProxy) {
         super(config, backupFileSystemCtx, pathFactory);
         this.instanceIdentity = instanceIdentity;
         this.snapshotStatusMgr = snapshotStatusMgr;
-        this.cassandraOperations = cassandraOperations;
+        this.jmxProxy = jmxProxy;
         backupRestoreUtil =
                 new BackupRestoreUtil(
                         config.getSnapshotIncludeCFList(), config.getSnapshotExcludeCFList());
@@ -175,7 +175,7 @@ public class SnapshotMetaTask extends AbstractBackup {
             metaProxy.cleanupOldMetaFiles();
 
             // Take a new snapshot
-            cassandraOperations.takeSnapshot(snapshotName);
+            jmxProxy.get().takeSnapshot(snapshotName);
             backupMetadata.setCassandraSnapshotSuccess(true);
 
             // Process the snapshot and upload the meta file.

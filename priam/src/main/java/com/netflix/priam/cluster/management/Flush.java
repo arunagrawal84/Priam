@@ -13,8 +13,9 @@
  */
 package com.netflix.priam.cluster.management;
 
+import com.google.inject.Provider;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.CassandraOperations;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.merics.NodeToolFlushMeasurement;
 import com.netflix.priam.scheduler.CronTimer;
 import com.netflix.priam.scheduler.TaskTimer;
@@ -34,17 +35,17 @@ public class Flush extends IClusterManagement<String> {
     private static final Logger logger = LoggerFactory.getLogger(Flush.class);
 
     private final IConfiguration config;
-    private final CassandraOperations cassandraOperations;
+    private final Provider<JmxManager> jmxProxy;
     private List<String> keyspaces = new ArrayList<>();
 
     @Inject
     public Flush(
             IConfiguration config,
-            CassandraOperations cassandraOperations,
+            Provider<JmxManager> jmxProxy,
             NodeToolFlushMeasurement nodeToolFlushMeasurement) {
         super(config, Task.FLUSH, nodeToolFlushMeasurement);
         this.config = config;
-        this.cassandraOperations = cassandraOperations;
+        this.jmxProxy = jmxProxy;
     }
 
     @Override
@@ -64,7 +65,7 @@ public class Flush extends IClusterManagement<String> {
 
         // If flush is for certain keyspaces, validate keyspace exist
         for (String keyspace : keyspaces) {
-            if (!cassandraOperations.getKeyspaces().contains(keyspace)) {
+            if (!jmxProxy.get().getKeyspaces().contains(keyspace)) {
                 throw new IllegalArgumentException("Keyspace [" + keyspace + "] does not exist.");
             }
 
@@ -72,7 +73,7 @@ public class Flush extends IClusterManagement<String> {
             continue;
 
             try {
-                cassandraOperations.forceKeyspaceFlush(keyspace);
+                jmxProxy.get().forceKeyspaceFlush(keyspace);
                 flushed.add(keyspace);
             } catch (IOException | ExecutionException | InterruptedException e) {
                 throw new Exception("Exception during flushing keyspace: " + keyspace, e);
@@ -98,7 +99,7 @@ public class Flush extends IClusterManagement<String> {
         }
 
         // == no override via FP, default to all keyspaces
-        this.keyspaces = cassandraOperations.getKeyspaces();
+        this.keyspaces = jmxProxy.get().getKeyspaces();
     }
 
     /**
@@ -110,7 +111,6 @@ public class Flush extends IClusterManagement<String> {
      * @throws Exception If the cron expression is invalid.
      */
     public static TaskTimer getTimer(IConfiguration config) throws Exception {
-
         return CronTimer.getCronTimer(Task.FLUSH.name(), config.getFlushCronExpression());
     }
 }

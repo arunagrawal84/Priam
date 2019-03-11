@@ -17,9 +17,10 @@
 package com.netflix.priam.health;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.JMXNodeTool;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.defaultimpl.ICassandraProcess;
 import com.netflix.priam.merics.CassMonitorMetrics;
 import com.netflix.priam.scheduler.SimpleTimer;
@@ -30,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.cassandra.tools.NodeProbe;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,17 +47,20 @@ public class CassandraMonitor extends Task {
     private final InstanceState instanceState;
     private final ICassandraProcess cassProcess;
     private final CassMonitorMetrics cassMonitorMetrics;
+    private final Provider<JmxManager> jmxProxy;
 
     @Inject
     protected CassandraMonitor(
             IConfiguration config,
             InstanceState instanceState,
             ICassandraProcess cassProcess,
-            CassMonitorMetrics cassMonitorMetrics) {
+            CassMonitorMetrics cassMonitorMetrics,
+            Provider<JmxManager> jmxProxy) {
         super(config);
         this.instanceState = instanceState;
         this.cassProcess = cassProcess;
         this.cassMonitorMetrics = cassMonitorMetrics;
+        this.jmxProxy = jmxProxy;
     }
 
     @Override
@@ -89,10 +92,10 @@ public class CassandraMonitor extends Task {
                 // Setting cassandra flag to true
                 instanceState.setCassandraProcessAlive(true);
                 isCassandraStarted.set(true);
-                NodeProbe bean = JMXNodeTool.instance(this.config);
-                instanceState.setIsGossipActive(bean.isGossipRunning());
-                instanceState.setIsNativeTransportActive(bean.isNativeTransportRunning());
-                instanceState.setIsThriftActive(bean.isThriftServerRunning());
+                instanceState.setIsGossipActive(jmxProxy.get().isGossipActive());
+                instanceState.setIsNativeTransportActive(jmxProxy.get().isNativeTransportActive());
+                instanceState.setIsThriftActive(jmxProxy.get().isThriftActive());
+                instanceState.setBootstrapping(!jmxProxy.get().isJoined());
             } else {
                 // Setting cassandra flag to false
                 instanceState.setCassandraProcessAlive(false);

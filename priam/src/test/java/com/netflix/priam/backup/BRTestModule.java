@@ -18,7 +18,9 @@
 package com.netflix.priam.backup;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.netflix.priam.aws.auth.IS3Credential;
 import com.netflix.priam.aws.auth.S3RoleAssumptionCredential;
@@ -29,6 +31,8 @@ import com.netflix.priam.config.FakeBackupRestoreConfig;
 import com.netflix.priam.config.FakeConfiguration;
 import com.netflix.priam.config.IBackupRestoreConfig;
 import com.netflix.priam.config.IConfiguration;
+import com.netflix.priam.connection.JmxManager;
+import com.netflix.priam.connection.JmxManagerImpl;
 import com.netflix.priam.cred.ICredential;
 import com.netflix.priam.cryptography.IFileCryptography;
 import com.netflix.priam.cryptography.pgp.PgpCryptography;
@@ -83,5 +87,13 @@ public class BRTestModule extends AbstractModule {
         bind(Registry.class).toInstance(new DefaultRegistry());
         bind(IMetaProxy.class).annotatedWith(Names.named("v1")).to(MetaV1Proxy.class);
         bind(IMetaProxy.class).annotatedWith(Names.named("v2")).to(MetaV2Proxy.class);
+    }
+
+    @Provides
+    @Singleton
+    public JmxManager getJmxManager(IConfiguration configuration) throws Exception {
+        JmxManager jmxManager = new JmxManagerImpl(configuration);
+        jmxManager.connect();
+        return jmxManager;
     }
 }

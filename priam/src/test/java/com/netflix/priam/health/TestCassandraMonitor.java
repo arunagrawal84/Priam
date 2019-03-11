@@ -19,15 +19,16 @@ package com.netflix.priam.health;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Provider;
 import com.netflix.priam.backup.BRTestModule;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.JMXNodeTool;
+import com.netflix.priam.connection.JmxManager;
+import com.netflix.priam.connection.JmxManagerImpl;
 import com.netflix.priam.defaultimpl.ICassandraProcess;
 import com.netflix.priam.merics.CassMonitorMetrics;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import mockit.*;
-import org.apache.cassandra.tools.NodeProbe;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public class TestCassandraMonitor {
     private IConfiguration config;
 
     @Mocked private Process mockProcess;
-    @Mocked private NodeProbe nodeProbe;
+    @Mocked private JmxManagerImpl jmxManager;
     @Mocked private ICassandraProcess cassProcess;
 
     @Before
@@ -51,8 +52,11 @@ public class TestCassandraMonitor {
         if (instanceState == null) instanceState = injector.getInstance(InstanceState.class);
         if (cassMonitorMetrics == null)
             cassMonitorMetrics = injector.getInstance(CassMonitorMetrics.class);
+        Provider<JmxManager> provider = injector.getProvider(JmxManager.class);
         if (monitor == null)
-            monitor = new CassandraMonitor(config, instanceState, cassProcess, cassMonitorMetrics);
+            monitor =
+                    new CassandraMonitor(
+                            config, instanceState, cassProcess, cassMonitorMetrics, provider);
     }
 
     @Test
@@ -70,22 +74,16 @@ public class TestCassandraMonitor {
 
     @Test
     public void testNoAutoRemediation() throws Exception {
-        new MockUp<JMXNodeTool>() {
-            @Mock
-            NodeProbe instance(IConfiguration config) {
-                return nodeProbe;
-            }
-        };
         final InputStream mockOutput = new ByteArrayInputStream("a process".getBytes());
         new Expectations() {
             {
                 mockProcess.getInputStream();
                 result = mockOutput;
-                nodeProbe.isGossipRunning();
+                jmxManager.isGossipActive();
                 result = true;
-                nodeProbe.isNativeTransportRunning();
+                jmxManager.isNativeTransportActive();
                 result = true;
-                nodeProbe.isThriftServerRunning();
+                jmxManager.isThriftActive();
                 result = true;
             }
         };

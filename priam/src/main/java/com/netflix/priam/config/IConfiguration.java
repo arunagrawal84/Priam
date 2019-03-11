@@ -174,6 +174,14 @@ public interface IConfiguration {
         return false;
     }
 
+    default int getJmxConnectionMonitorPeriodInMs() {
+        return 60000;
+    }
+
+    default int getJmxConnectionIdCacheTTL() {
+        return 10000;
+    }
+
     /** @return Cassandra storage/cluster communication port */
     default int getStoragePort() {
         return 7000;

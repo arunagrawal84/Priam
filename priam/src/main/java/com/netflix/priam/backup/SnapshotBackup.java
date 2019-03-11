@@ -23,7 +23,7 @@ import com.google.inject.Singleton;
 import com.netflix.priam.backup.AbstractBackupPath.BackupFileType;
 import com.netflix.priam.backupv2.ForgottenFilesManager;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.connection.CassandraOperations;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.health.CassandraMonitor;
 import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.scheduler.CronTimer;
@@ -53,7 +53,7 @@ public class SnapshotBackup extends AbstractBackup {
     private String snapshotName = null;
     private Instant snapshotInstant = DateUtil.getInstant();
     private List<AbstractBackupPath> abstractBackupPaths = null;
-    private final CassandraOperations cassandraOperations;
+    private final Provider<JmxManager> jmxProxy;
     private static final Lock lock = new ReentrantLock();
 
     @Inject
@@ -64,13 +64,13 @@ public class SnapshotBackup extends AbstractBackup {
             IFileSystemContext backupFileSystemCtx,
             IBackupStatusMgr snapshotStatusMgr,
             InstanceIdentity instanceIdentity,
-            CassandraOperations cassandraOperations,
+            Provider<JmxManager> jmxProxy,
             ForgottenFilesManager forgottenFilesManager) {
         super(config, backupFileSystemCtx, pathFactory);
         this.metaData = metaData;
         this.snapshotStatusMgr = snapshotStatusMgr;
         this.instanceIdentity = instanceIdentity;
-        this.cassandraOperations = cassandraOperations;
+        this.jmxProxy = jmxProxy;
         backupRestoreUtil =
                 new BackupRestoreUtil(
                         config.getSnapshotIncludeCFList(), config.getSnapshotExcludeCFList());
@@ -115,7 +115,7 @@ public class SnapshotBackup extends AbstractBackup {
 
         try {
             logger.info("Starting snapshot {}", snapshotName);
-            cassandraOperations.takeSnapshot(snapshotName);
+            jmxProxy.get().takeSnapshot(snapshotName);
             backupMetadata.setCassandraSnapshotSuccess(true);
 
             // Collect all snapshot dir's under keyspace dir's
@@ -147,7 +147,7 @@ public class SnapshotBackup extends AbstractBackup {
             throw e;
         } finally {
             try {
-                cassandraOperations.clearSnapshot(snapshotName);
+                jmxProxy.get().clearSnapshot(snapshotName);
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             }
