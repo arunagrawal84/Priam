@@ -18,12 +18,14 @@ package com.netflix.priam.resources;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.netflix.priam.cluster.management.Compaction;
 import com.netflix.priam.cluster.management.Flush;
 import com.netflix.priam.compress.SnappyCompression;
 import com.netflix.priam.config.IConfiguration;
 import com.netflix.priam.connection.JMXConnectionException;
 import com.netflix.priam.connection.JMXNodeTool;
+import com.netflix.priam.connection.JmxManager;
 import com.netflix.priam.defaultimpl.ICassandraProcess;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -62,17 +64,21 @@ public class CassandraAdmin {
     private final ICassandraProcess cassProcess;
     private final Flush flush;
     private final Compaction compaction;
+    private final Provider<JmxManager> jmxProxy;
+
 
     @Inject
     public CassandraAdmin(
             IConfiguration config,
             ICassandraProcess cassProcess,
             Flush flush,
-            Compaction compaction) {
+            Compaction compaction,
+        Provider<JmxManager> jmxProxy) {
         this.config = config;
         this.cassProcess = cassProcess;
         this.flush = flush;
         this.compaction = compaction;
+        this.jmxProxy = jmxProxy;
     }
 
     @GET
@@ -128,16 +134,7 @@ public class CassandraAdmin {
     @GET
     @Path("/partitioner")
     public Response cassPartitioner() throws IOException, InterruptedException, JSONException {
-        JMXNodeTool nodeTool;
-        try {
-            nodeTool = JMXNodeTool.instance(config);
-        } catch (JMXConnectionException e) {
-            logger.error(
-                    "Exception in fetching c* jmx tool .  Msgl: {}", e.getLocalizedMessage(), e);
-            return Response.status(503).entity("JMXConnectionException").build();
-        }
-        logger.debug("node tool getPartitioner being called");
-        return Response.ok(nodeTool.getPartitioner(), MediaType.APPLICATION_JSON).build();
+        return Response.ok(jmxProxy.get().getPartitioner(), MediaType.APPLICATION_JSON).build();
     }
 
     @GET
