@@ -314,18 +314,72 @@
                 
                 <h1 id="metrics">Metrics</h1>
 <p>Priam uses <a href="https://github.com/Netflix/spectator">spectator</a> to collect Metrics. The default binding is no operation. </p>
-<p>|Name|Type|Purpose|
-|<code>priam.upload.rate</code>|DistributionSummary|Rate at which Priam is uploading the files to remote file system (during backup).|
-|<code>priam.upload.valid</code>|Counter|No of successful uploads to the remote file system.|
-|<code>priam.upload.invalid</code>|Counter|No. of uploads to the remote file system which failed after exhausting all the retries.|
-|<code>priam.upload.queue.size</code>|Counter|Size of the upload queue where items are waiting to be uploaded.|
-|<code>priam.download.rate</code>|DistributionSummary|Rate at which Priam is downloading the files from remote file system (during restore).|
-|<code>priam.download.valid</code>|Counter|No of successful downloads from the remote file system.|
-|<code>priam.download.invalid</code>|Counter|No. of downloads from the remote file system which failed after exhausting all the retries.|
-|<code>priam.download.queue.size</code>|Counter|Size of the download queue where items are waiting to be downloaded.|
-|<code>priam.sns.notification.success</code>|Counter|Total number of sns notifications sent which are successful|
-|<code>priam.sns.notification.failure</code>|Counter|Total number of sns notifications which failed after exhausting all the retries (may be configuration error)|
-|<code>priam.forgotten.files</code>|Counter|No. of files that are considered forgotten by Cassandra, as detected by Priam during snapshot. <strong>Note</strong>: This is exclusive feature of 3.x (C* 2.x) branch|</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>priam.upload.rate</code></td>
+<td>DistributionSummary</td>
+<td>Rate at which Priam is uploading the files to remote file system (during backup).</td>
+</tr>
+<tr>
+<td><code>priam.upload.valid</code></td>
+<td>Counter</td>
+<td>No of successful uploads to the remote file system.</td>
+</tr>
+<tr>
+<td><code>priam.upload.invalid</code></td>
+<td>Counter</td>
+<td>No. of uploads to the remote file system which failed after exhausting all the retries.</td>
+</tr>
+<tr>
+<td><code>priam.upload.queue.size</code></td>
+<td>Counter</td>
+<td>Size of the upload queue where items are waiting to be uploaded.</td>
+</tr>
+<tr>
+<td><code>priam.download.rate</code></td>
+<td>DistributionSummary</td>
+<td>Rate at which Priam is downloading the files from remote file system (during restore).</td>
+</tr>
+<tr>
+<td><code>priam.download.valid</code></td>
+<td>Counter</td>
+<td>No of successful downloads from the remote file system.</td>
+</tr>
+<tr>
+<td><code>priam.download.invalid</code></td>
+<td>Counter</td>
+<td>No. of downloads from the remote file system which failed after exhausting all the retries.</td>
+</tr>
+<tr>
+<td><code>priam.download.queue.size</code></td>
+<td>Counter</td>
+<td>Size of the download queue where items are waiting to be downloaded.</td>
+</tr>
+<tr>
+<td><code>priam.sns.notification.success</code></td>
+<td>Counter</td>
+<td>Total number of sns notifications sent which are successful</td>
+</tr>
+<tr>
+<td><code>priam.sns.notification.failure</code></td>
+<td>Counter</td>
+<td>Total number of sns notifications which failed after exhausting all the retries (may be configuration error)</td>
+</tr>
+<tr>
+<td><code>priam.forgotten.files</code></td>
+<td>Counter</td>
+<td>No. of files that are considered forgotten by Cassandra, as detected by Priam during snapshot. <strong>Note</strong>: This is exclusive feature of 3.x (C* 2.x) branch</td>
+</tr>
+</tbody>
+</table>
                 
                   
                 
